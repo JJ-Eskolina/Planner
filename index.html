@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="links/styles.css">
-    <script defer src="javascript.js"></script>
+    <script defer src="links/javascript.js"></script>
     <title>Planner app</title>
 </head>
 <body>
@@ -15,12 +15,16 @@
             <input type="text" placeholder="Search...">
             </div>
             <div class="settings">
-                <div id="setIcon"></div>
-                <div id="setProfile"></div>
+                <button id="setIcon"></button>
             </div>
     </header>
     <main class = "content" >
-        <aside id="profileScroll"></aside>
+        <aside id="profileScroll">
+            <header></header>
+            <main>
+                <div id="upComing"></div>
+            </main>
+        </aside>
         <div id ="calanderBox">
             <header>
                 <div class="additional">
@@ -33,7 +37,23 @@
         </div>
 
     </main>
-        <aside class ="setttingsTab">hello here is is</aside>
+        <aside id ="settingsTab"  style="display: none;" >
+            <header id="tabHeader"> 
+                <button id="Back">Back</button>
+                <h1>settings</h1>
+            </header>
+            <main>
+                <div>
+                    <button></button>
+                    <h3>thema</h3>
+                </div>
+                                <div>
+                    <button></button>
+                    <h3></h3>
+                </div>
+            </main>
+            <footer></footer>
+        </aside>
     </section>
 </body>
 </html>

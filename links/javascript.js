@@ -1,5 +1,14 @@
-// tasks grouped by date (YYYY-MM-DD)
-// you'll replace this with saved data later
+
+//////////////////////////////////////////////////// 
+//                        settingScreen
+//////////////////////////////////////////////////// 
+
+
+//////////////////////////////////////////////////// 
+//                        AGENDA
+//////////////////////////////////////////////////// 
+
+
 const tasks = {
   "2025-11-15": [
     { label: "Work", title: "Meeting", time: "10:00" },
@@ -54,7 +63,7 @@ function generateCalendar(yearsAhead = 3) {
         monthDiv.appendChild(labelDiv);
       });
 
-      // convert JS weekday (Sun = 0) to Monday-based index
+      
       const firstWeekday = (firstDay.getDay() + 6) % 7;
 
       // leading filler days from previous month
@@ -66,7 +75,6 @@ function generateCalendar(yearsAhead = 3) {
         monthDiv.appendChild(filler);
       }
 
-      // loop through all actual days
       for (let d = 1; d <= lastDay.getDate(); d++) {
         const day = document.createElement("div");
         day.className = "day";
@@ -80,7 +88,7 @@ function generateCalendar(yearsAhead = 3) {
           day.classList.add("today");
         }
 
-        // number in the top-left corner of a cell
+        // number in the top-left corner 
         day.innerHTML = `<div class="day-number">${d}</div>`;
 
         // check if this day has saved tasks
@@ -89,7 +97,7 @@ function generateCalendar(yearsAhead = 3) {
 
         // show tasks inside the day cell
         if (dayTasks.length > 0) {
-          const maxVisible = 3;  // only show first 3 tasks
+          const maxVisible = 3;  
 
           // add the first 3 tasks normally
           dayTasks.slice(0, maxVisible).forEach(t => {
@@ -143,3 +151,23 @@ function generateCalendar(yearsAhead = 3) {
 }
 
 generateCalendar();
+
+
+//////////////////////////////////////////////////// 
+//                        AGENDA
+//////////////////////////////////////////////////// 
+
+const settingButton = document.getElementById("setIcon");
+const settingsTab = document.getElementById("settingsTab");
+const settingsBack = document.getElementById("Back");
+
+  if(settingButton.addEventListener('click', () => {
+    settingsTab.style.display = 'block'; // 
+    settingButton.style.display = 'none';
+  }));
+
+  if(settingsBack.addEventListener('click', () => {
+    settingsTab.style.display = 'none'; // 
+    settingButton.style.display = 'block';
+  }));
+
