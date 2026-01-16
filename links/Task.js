@@ -1,3 +1,4 @@
+
 // --------------------------
 // Task & TaskManager
 // --------------------------
@@ -65,7 +66,7 @@ const setBack = document.getElementById("setBack");
 // --------------------------
 // Global Calendar Data
 // --------------------------
-const tasksByDate = {}; // { "yyyy-mm-dd": [{label,title,time}] }
+const tasksByDate = {}; 
 let editingTaskId = null;
 
 // --------------------------
@@ -95,14 +96,12 @@ function addTaskToSidebar(task) {
   div.querySelector(".editTask").addEventListener("click", () => {
     editingTaskId = task.id;
 
-    // fill the form with current task data
     form.taskName.value = task.name;
     form.taskNotes.value = task.notes;
     form.taskDate.value = task.date;
     form.taskTime.value = task.time;
     form.taskPriority.value = task.priority;
 
-    // open the same modal as Add
     Taskscreen.style.display = "block";
   });
 
@@ -137,13 +136,11 @@ function generateCalendar(yearsAhead = 3) {
 
       if (year === today.getFullYear() && month === today.getMonth()) thisMonthElement = monthDiv;
 
-      // month title
       const title = document.createElement("div");
       title.className = "month-title";
       title.textContent = firstDay.toLocaleString("default", { month: "long", year: "numeric" });
       monthDiv.appendChild(title);
 
-      // day labels
       dayLabels.forEach(label => {
         const labelDiv = document.createElement("div");
         labelDiv.className = "day-label";
@@ -153,7 +150,6 @@ function generateCalendar(yearsAhead = 3) {
 
       const firstWeekday = (firstDay.getDay() + 6) % 7;
 
-      // leading filler days
       for (let i = 0; i < firstWeekday; i++) {
         const filler = document.createElement("div");
         filler.className = "day filler";
@@ -162,7 +158,6 @@ function generateCalendar(yearsAhead = 3) {
         monthDiv.appendChild(filler);
       }
 
-      // actual days
       for (let d = 1; d <= lastDay.getDate(); d++) {
         const day = document.createElement("div");
         day.className = "day";
@@ -171,7 +166,6 @@ function generateCalendar(yearsAhead = 3) {
         monthDiv.appendChild(day);
       }
 
-      // trailing filler days
       const totalCells = firstWeekday + lastDay.getDate();
       const remainder = totalCells % 7;
       if (remainder !== 0) {
@@ -192,7 +186,6 @@ function generateCalendar(yearsAhead = 3) {
   if (thisMonthElement) setTimeout(() => thisMonthElement.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
 }
 
-// render tasks for a single day
 function renderCalendarDay(date) {
   const dayTasks = tasksByDate[date] || [];
   const [year, month, day] = date.split("-").map(Number);
@@ -251,9 +244,20 @@ form.addEventListener("submit", e => {
 
   if (!name || !date) return alert("Task name and date are required.");
 
+  // --------------------------
+  // EDIT MODE
+  // --------------------------
   if (editingTaskId !== null) {
     const task = taskManager.tasks.find(t => t.id === editingTaskId);
     if (task) {
+
+      // >>> FIX ADDED HERE <<<
+      if (tasksByDate[task.date]) {
+        tasksByDate[task.date] = tasksByDate[task.date].filter(
+          t => !(t.title === task.name && t.time === task.time)
+        );
+      }
+
       removeTaskFromCalendar(task);
 
       task.name = name;
@@ -271,12 +275,16 @@ form.addEventListener("submit", e => {
       tasksByDate[date].push({ label: priority, title: name, time: time });
       renderCalendarDay(date);
     }
+
     editingTaskId = null;
     form.reset();
     Taskscreen.style.display = "none";
     return;
   }
 
+  // --------------------------
+  // ADD MODE
+  // --------------------------
   const task = taskManager.addTask(name, notes, date, time, priority);
   addTaskToSidebar(task);
 
