@@ -58,7 +58,9 @@ const closeTaskWindow = document.getElementById("closeTaskWindow");
 const form = document.getElementById("taskForm");
 const upComing = document.getElementById("upComing");
 const calendar = document.getElementById("calendar");
-
+const settingsButton = document.getElementById("setIcon");
+const settingsTab = document.getElementById("settingsTab");
+const setBack = document.getElementById("setBack");
 // --------------------------
 // Global Calendar Data
 // --------------------------
@@ -185,7 +187,7 @@ function renderCalendarDay(date) {
 
   const dayCells = monthDiv.querySelectorAll(".day");
   dayCells.forEach(cell => {
-    const cellNumber = Number(cell.querySelector(".day-number").textContent);
+    const cellNumber = Number(cell.querySelector(".day-number")?.textContent);
     if (cellNumber === day) {
       // clear old tasks
       cell.querySelectorAll(".task, .task-blur-overlay").forEach(n => n.remove());
@@ -221,6 +223,8 @@ taskButton.addEventListener("click", e => { Taskscreen.style.display = "block"; 
 closeTaskWindow.addEventListener("click", e => { Taskscreen.style.display = "none"; e.stopPropagation(); });
 window.addEventListener("click", e => { if (Taskscreen.style.display === "block" && !Taskscreen.contains(e.target) && e.target !== taskButton) Taskscreen.style.display = "none"; });
 Taskscreen.addEventListener("click", e => e.stopPropagation());
+setIcon.addEventListener("click", e => { if (settingsTab.style.display === "none") { settingsTab.style.display = "block"; setIcon.style.display = "none"; } e.stopPropagation();});
+setBack.addEventListener("click", e => { if (settingsTab.style.display === "block") { settingsTab.style.display = "none"; setIcon.style.display = "block"; } e.stopPropagation();});
 
 // form submit
 form.addEventListener("submit", e => {
@@ -257,3 +261,4 @@ taskManager.tasks.forEach(task => {
   tasksByDate[task.date].push({ label: task.priority, title: task.name, time: task.time });
   renderCalendarDay(task.date);
 });
+
