@@ -1,112 +1,93 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="links/styles.css">
-    <script defer src="links/Task.js"></script>
-    <title>Planner app</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="links/styles.css">
+  <script defer src="links/Task.js"></script>
+  <title>Planner app</title>
 </head>
 <body>
-    <section class="homePage" style="flex-direction: column;">
+
+<section class="homePage" style="flex-direction: column;">
+
+<header>
+  <div id="logo"><h2>myPlanner</h2></div>
+  <div class="settings">
+    <button id="setIcon"></button>
+  </div>
+</header>
+
+<main class="content">
+
+  <aside id="taskScroll">
+    <header><h2>Upcoming :</h2></header>
+    <main>
+      <div id="upComing"></div>
+    </main>
+  </aside>
+
+  <div id="calanderBox">
     <header>
-            <div id="logo"><h2>myPlanner</h1></div>
-            <div class="settings">
-                <button id="setIcon"></button>
-            </div>
-    </header>
-    <main class = "content" >
-        <aside id="taskScroll">
-            <header>
-                <h2>Upcoming :</h2>
-            </header>
-            <main>
-                <div id="upComing">
+      <div class="additional">
+        <div id="addTask"><h3>Add</h3></div>
 
-                    
-                </div>
-                <!-- <div id ='test'></div> -->
-            </main>
-        </aside>
-        <div id ="calanderBox">
-            <header>
-                <div class="additional">
-                    <div id="addTask">
-                        <h3>Add</h3>
+        <div id="Taskscreen" style="display:none;">
+          <main>
+            <form id="taskForm">
+              <div>
+                <label>Taaknaam</label>
+                <input id="taskName" required>
+              </div>
 
-                        <div id="Taskscreen">
+              <div>
+                <label>Datum</label>
+                <input type="date" id="taskDate">
+              </div>
 
-                            <main>
-                                                
-                   <form id="taskForm" novalidate>
-      <!-- Task Name -->
-      <div>
-        <label for="taskName">Taaknaam</label>
-        <input type="text" id="taskName" name="taskName" placeholder="Bijv. Boodschappen doen" required />
-      </div>
+              <div>
+                <label>Taaknotities</label>
+                <textarea id="taskNotes"></textarea>
+              </div>
 
-        <!-- Task Date -->
-    <div>
-    <label for="taskDate">Datum</label>
-    <input type="date" id="taskDate" name="taskDate" />
-    </div>
+              <div>
+                <label>Tijd</label>
+                <input type="time" id="taskTime">
+              </div>
 
-      <!-- Task Notes -->
-      <div>
-        <label for="taskNotes">Taaknotities</label>
-        <textarea id="taskNotes" name="taskNotes" placeholder="Meer details, stappen, of reminders..."></textarea>
-      </div>
+              <div>
+                <label>Prioriteit</label>
+                <select id="taskPriority">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
 
-      <!-- Task Time -->
-      <div>
-        <label for="taskTime">Tijd</label>
-        <input type="time" id="taskTime" name="taskTime" />
-      </div>
-
-      <!-- Optional: Task Priority -->
-      <div>
-        <label for="taskPriority">Prioriteit</label>
-        <select id="taskPriority" name="taskPriority">
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-        </select>
-      </div>
-
-      <!-- Buttons -->
-      <div>
-        <button id="closeTaskWindow" type="button">Back</button>
-        <button type="submit">Opslaan taak</button>
-      </div>
-    </form>
-                            </main>
-                        </div>
-                    </div>
-                    <!-- <div id="editTask"></div> -->
-                </div> 
-            </header>
-            <div id="calendar">
-            </div>
+              <div>
+                <button type="button" id="closeTaskWindow">Back</button>
+                <button type="submit">Save</button>
+              </div>
+            </form>
+          </main>
         </div>
 
-    </main>
-        <aside id ="settingsTab"  style="display: none;" >
-            <header id="tabHeader"> 
-                <button id="setBack">Back</button>
-                <h1>settings</h1>
-            </header>
-            <main>
-                <div>
-                    <button></button>
-                    <h3>thema</h3>
-                </div>
-                                <div>
-                    <button></button>
-                    <h3></h3>
-                </div>
-            </main>
-            <footer></footer>
-        </aside>
-    </section>
+      </div>
+    </header>
+
+    <div id="calendar"></div>
+  </div>
+
+</main>
+
+<aside id="settingsTab" style="display:none;">
+  <header id="tabHeader">
+    <button id="setBack">Back</button>
+    <h1>settings</h1>
+  </header>
+</aside>
+
+</section>
+
 </body>
 </html>
