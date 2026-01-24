@@ -1,5 +1,36 @@
 
 // --------------------------
+// App Settings (defaults)
+// --------------------------
+const defaultSettings = {
+  theme: "dark",
+  defaultPriority: "low",
+  weekStartsOn: "monday",
+};
+
+let appSettings = { ...defaultSettings };
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem("settings"));
+    if (saved) appSettings = { ...defaultSettings, ...saved };
+  } catch {
+    localStorage.removeItem("settings");
+  }
+}
+
+function saveSettings() {
+  localStorage.setItem("settings", JSON.stringify(appSettings));
+}
+
+function applyTheme() {
+  document.body.dataset.theme = appSettings.theme; // "dark" or "light"
+}
+
+loadSettings();
+applyTheme();
+
+// --------------------------
 // Task & TaskManager
 // --------------------------
 const Priority = { low: "low", medium: "medium", high: "high" };
@@ -10,7 +41,7 @@ class Task {
     this.name = name;
     this.notes = notes;
     this.date = date; // yyyy-mm-dd
-    this.time = time;
+    this.time = time || "";
     this.priority = priority || Priority.low;
   }
 }
@@ -39,11 +70,20 @@ class TaskManager {
   }
 
   loadTasks() {
-    const saved = JSON.parse(localStorage.getItem("tasks") || "[]");
-    this.tasks = saved.map(
-      t => new Task(t.id, t.name, t.notes, t.date, t.time, t.priority)
-    );
-    this.id = this.tasks.length > 0 ? Math.max(...this.tasks.map(t => t.id)) : 0;
+    try {
+      // Protect corrupted localStorage
+      const saved = JSON.parse(localStorage.getItem("tasks") || "[]");
+      this.tasks = saved.map(
+        t => new Task(t.id, t.name, t.notes, t.date, t.time, t.priority)
+      );
+      // Restore ID counter
+      this.id = this.tasks.length ? Math.max(...this.tasks.map(t => t.id)) : 0;
+    } catch {
+      // Fail-safe
+      this.tasks = [];
+      this.id = 0;
+      localStorage.removeItem("tasks");
+    }
   }
 }
 
@@ -59,14 +99,53 @@ const closeTaskWindow = document.getElementById("closeTaskWindow");
 const form = document.getElementById("taskForm");
 const upComing = document.getElementById("upComing");
 const calendar = document.getElementById("calendar");
-const settingsButton = document.getElementById("setIcon");
+
+
+const setIcon = document.getElementById("setIcon");
 const settingsTab = document.getElementById("settingsTab");
 const setBack = document.getElementById("setBack");
+
+// Settings controls
+const themeSelect = document.getElementById("themeSelect");
+const defaultPrioritySelect = document.getElementById("defaultPriority");
+const weekStartSelect = document.getElementById("weekStart");
+
+// Form controls (no name attributes needed)
+const taskNameEl = document.getElementById("taskName");
+const taskDateEl = document.getElementById("taskDate");
+const taskNotesEl = document.getElementById("taskNotes");
+const taskTimeEl = document.getElementById("taskTime");
+const taskPriorityEl = document.getElementById("taskPriority");
+
+// --------------------------
+// Settings UI init
+// --------------------------
+if (themeSelect) themeSelect.value = appSettings.theme;
+if (defaultPrioritySelect) defaultPrioritySelect.value = appSettings.defaultPriority;
+if (weekStartSelect) weekStartSelect.value = appSettings.weekStartsOn;
+
+themeSelect?.addEventListener("change", () => {
+  appSettings.theme = themeSelect.value;
+  saveSettings();
+  applyTheme();
+});
+
+defaultPrioritySelect?.addEventListener("change", () => {
+  appSettings.defaultPriority = defaultPrioritySelect.value;
+  saveSettings();
+});
+
+weekStartSelect?.addEventListener("change", () => {
+  appSettings.weekStartsOn = weekStartSelect.value;
+  saveSettings();
+  generateCalendar();
+  reRenderAllCalendarTasks();
+});
 
 // --------------------------
 // Global Calendar Data
 // --------------------------
-const tasksByDate = {}; 
+const tasksByDate = {};
 let editingTaskId = null;
 
 // --------------------------
@@ -74,45 +153,57 @@ let editingTaskId = null;
 // --------------------------
 function addTaskToSidebar(task) {
   const div = document.createElement("div");
-  div.setAttribute("data-id", task.id);
-  div.style.border = "1px solid #aaa";
-  div.style.margin = "0.5rem";
-  div.style.padding = "0.5rem";
-  div.style.borderRadius = "5px";
-  div.innerHTML = `
-    <strong>${task.name}</strong> ${task.date} ${task.time ? "(" + task.time + ")" : ""}
-    <p>${task.notes}</p>
-    <p>Priority: ${task.priority}</p>
-    <button class="editTask">Edit</button>
-    <button class="deleteTask">Delete</button>
-  `;
-  
-  div.querySelector(".deleteTask").addEventListener("click", () => {
+  div.dataset.id = task.id;
+
+  div.style.cssText =
+    "border:1px solid #aaa;margin:0.5rem;padding:0.5rem;border-radius:5px;";
+
+  const title = document.createElement("strong");
+  title.textContent = task.name;
+
+  const meta = document.createElement("span");
+  meta.textContent = ` ${task.date}${task.time ? ` (${task.time})` : ""}`;
+
+  const notes = document.createElement("p");
+  notes.textContent = task.notes;
+
+  const pri = document.createElement("p");
+  pri.textContent = `Priority: ${task.priority}`;
+
+  const editBtn = document.createElement("button");
+  editBtn.textContent = "Edit";
+  editBtn.type = "button";
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "Delete";
+  deleteBtn.type = "button";
+
+  editBtn.addEventListener("click", () => {
+    editingTaskId = task.id;
+
+    // Populate form (no HTML changes needed)
+    taskNameEl.value = task.name;
+    taskNotesEl.value = task.notes;
+    taskDateEl.value = task.date;
+    taskTimeEl.value = task.time;
+    taskPriorityEl.value = task.priority;
+
+    Taskscreen.style.display = "block";
+  });
+
+  deleteBtn.addEventListener("click", () => {
     taskManager.removeTask(task.id);
     div.remove();
     removeTaskFromCalendar(task);
   });
 
-  div.querySelector(".editTask").addEventListener("click", () => {
-    editingTaskId = task.id;
-
-    form.taskName.value = task.name;
-    form.taskNotes.value = task.notes;
-    form.taskDate.value = task.date;
-    form.taskTime.value = task.time;
-    form.taskPriority.value = task.priority;
-
-    Taskscreen.style.display = "block";
-  });
-
+  div.append(title, meta, notes, pri, editBtn, deleteBtn);
   upComing.appendChild(div);
 }
 
 function removeTaskFromCalendar(task) {
   if (!tasksByDate[task.date]) return;
-  tasksByDate[task.date] = tasksByDate[task.date].filter(
-    t => !(t.title === task.name && t.time === task.time)
-  );
+  tasksByDate[task.date] = tasksByDate[task.date].filter(t => t.id !== task.id);
   renderCalendarDay(task.date);
 }
 
@@ -121,59 +212,80 @@ function removeTaskFromCalendar(task) {
 // --------------------------
 function generateCalendar(yearsAhead = 3) {
   const today = new Date();
-  const startYear = today.getFullYear();
-  const endYear = startYear + yearsAhead;
-  const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  let thisMonthElement = null;
+  const todayY = today.getFullYear();
+  const todayM = today.getMonth(); // 0-11
+  const todayD = today.getDate();
+
   calendar.innerHTML = "";
 
-  for (let year = startYear; year <= endYear; year++) {
+  // Weekday labels based on setting
+  const weekdays =
+    appSettings.weekStartsOn === "monday"
+      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  for (let year = today.getFullYear(); year <= today.getFullYear() + yearsAhead; year++) {
     for (let month = 0; month < 12; month++) {
       const firstDay = new Date(year, month, 1);
-      const lastDay = new Date(year, month + 1, 0);
       const monthDiv = document.createElement("div");
       monthDiv.className = "month";
 
-      if (year === today.getFullYear() && month === today.getMonth()) thisMonthElement = monthDiv;
+      // Use data-year/month for later lookup
+      monthDiv.dataset.year = year;
+      monthDiv.dataset.month = month + 1;
 
       const title = document.createElement("div");
       title.className = "month-title";
-      title.textContent = firstDay.toLocaleString("default", { month: "long", year: "numeric" });
+      title.textContent = firstDay.toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      });
       monthDiv.appendChild(title);
 
-      dayLabels.forEach(label => {
-        const labelDiv = document.createElement("div");
-        labelDiv.className = "day-label";
-        labelDiv.textContent = label;
-        monthDiv.appendChild(labelDiv);
+      // Weekday header row
+      weekdays.forEach(w => {
+        const label = document.createElement("div");
+        label.className = "day-label";
+        label.textContent = w;
+        monthDiv.appendChild(label);
       });
 
-      const firstWeekday = (firstDay.getDay() + 6) % 7;
+      // Monday-start => +6 mod 7; Sunday-start => +0
+      const offset = appSettings.weekStartsOn === "monday" ? 6 : 0;
+      const firstWeekday = (firstDay.getDay() + offset) % 7;
+      const lastDay = new Date(year, month + 1, 0).getDate();
 
+      // Leading fillers before day 1
       for (let i = 0; i < firstWeekday; i++) {
         const filler = document.createElement("div");
         filler.className = "day filler";
-        filler.textContent = new Date(year, month, -(firstWeekday - 1 - i)).getDate();
         filler.style.opacity = "0.35";
         monthDiv.appendChild(filler);
       }
 
-      for (let d = 1; d <= lastDay.getDate(); d++) {
+      // Day cells
+      for (let d = 1; d <= lastDay; d++) {
         const day = document.createElement("div");
         day.className = "day";
-        if (d === today.getDate() && month === today.getMonth() && year === today.getFullYear()) day.classList.add("today");
         day.innerHTML = `<div class="day-number">${d}</div>`;
+
+        // ✅ Highlight today
+        const isToday = year === todayY && month === todayM && d === todayD;
+        if (isToday) {
+          day.classList.add("today");
+          day.setAttribute("aria-current", "date");
+          day.dataset.today = "true";
+        }
+
         monthDiv.appendChild(day);
       }
 
-      const totalCells = firstWeekday + lastDay.getDate();
-      const remainder = totalCells % 7;
+      const totalCellsAfterTitle = 7 + firstWeekday + lastDay;
+      const remainder = totalCellsAfterTitle % 7;
       if (remainder !== 0) {
-        const trailing = 7 - remainder;
-        for (let i = 1; i <= trailing; i++) {
+        for (let i = 0; i < 7 - remainder; i++) {
           const filler = document.createElement("div");
           filler.className = "day filler";
-          filler.textContent = i;
           filler.style.opacity = "0.35";
           monthDiv.appendChild(filler);
         }
@@ -182,99 +294,112 @@ function generateCalendar(yearsAhead = 3) {
       calendar.appendChild(monthDiv);
     }
   }
-
-  if (thisMonthElement) setTimeout(() => thisMonthElement.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
 }
 
 function renderCalendarDay(date) {
   const dayTasks = tasksByDate[date] || [];
   const [year, month, day] = date.split("-").map(Number);
 
-  const monthName = new Date(year, month - 1).toLocaleString("default", { month: "long", year: "numeric" });
-  const monthDiv = Array.from(calendar.querySelectorAll(".month")).find(
-    m => m.querySelector(".month-title")?.textContent === monthName
+  const monthDiv = calendar.querySelector(
+    `.month[data-year="${year}"][data-month="${month}"]`
   );
   if (!monthDiv) return;
 
-  const dayCells = monthDiv.querySelectorAll(".day");
-  dayCells.forEach(cell => {
-    const cellNumber = Number(cell.querySelector(".day-number")?.textContent);
-    if (cellNumber === day) {
+  monthDiv.querySelectorAll(".day").forEach(cell => {
+    const num = Number(cell.querySelector(".day-number")?.textContent);
+    if (num === day) {
       cell.querySelectorAll(".task, .task-blur-overlay").forEach(n => n.remove());
-      const maxVisible = 3;
 
-      dayTasks.slice(0, maxVisible).forEach(t => {
+      dayTasks.slice(0, 3).forEach(t => {
         const tDiv = document.createElement("div");
         tDiv.className = "task";
-        tDiv.innerHTML = `
-          <div class="task-label">${t.label}</div>
-          <div class="task-title">${t.title}</div>
-          <div class="task-time">${t.time}</div>
-        `;
+        tDiv.textContent = `${t.label}: ${t.title} ${t.time}`;
         cell.appendChild(tDiv);
       });
 
-      if (dayTasks.length > maxVisible) {
-        const blurOverlay = document.createElement("div");
-        blurOverlay.className = "task-blur-overlay";
-        cell.appendChild(blurOverlay);
+      if (dayTasks.length > 3) {
+        const blur = document.createElement("div");
+        blur.className = "task-blur-overlay";
+        cell.appendChild(blur);
       }
     }
   });
 }
 
+function reRenderAllCalendarTasks() {
+  Object.keys(tasksByDate).forEach(renderCalendarDay);
+}
+
 // --------------------------
 // Event Listeners
 // --------------------------
-taskButton.addEventListener("click", e => { Taskscreen.style.display = "block"; e.stopPropagation(); });
-closeTaskWindow.addEventListener("click", e => { Taskscreen.style.display = "none"; e.stopPropagation(); });
-window.addEventListener("click", e => { if (Taskscreen.style.display === "block" && !Taskscreen.contains(e.target) && e.target !== taskButton) Taskscreen.style.display = "none"; });
-Taskscreen.addEventListener("click", e => e.stopPropagation());
-setIcon.addEventListener("click", e => { if (settingsTab.style.display === "none") { settingsTab.style.display = "block"; setIcon.style.display = "none"; } e.stopPropagation();});
-setBack.addEventListener("click", e => { if (settingsTab.style.display === "block") { settingsTab.style.display = "none"; setIcon.style.display = "block"; } e.stopPropagation(); });
+taskButton?.addEventListener("click", () => {
+  if (editingTaskId === null) {
+    taskPriorityEl.value = appSettings.defaultPriority || Priority.low;
+    taskNameEl.value = "";
+    taskNotesEl.value = "";
+    taskDateEl.value = "";
+    taskTimeEl.value = "";
+  }
+  Taskscreen.style.display = "block";
+});
 
-// form submit
-form.addEventListener("submit", e => {
+closeTaskWindow?.addEventListener("click", () => {
+  editingTaskId = null;
+  form.reset();
+  Taskscreen.style.display = "none";
+});
+
+setIcon?.addEventListener("click", () => {
+  settingsTab.style.display = "block";
+  setIcon.style.display = "none";
+});
+
+setBack?.addEventListener("click", () => {
+  settingsTab.style.display = "none";
+  setIcon.style.display = "block";
+});
+
+// --------------------------
+// Form Submit
+// --------------------------
+form?.addEventListener("submit", e => {
   e.preventDefault();
-  const name = form.taskName.value.trim();
-  const notes = form.taskNotes.value.trim();
-  const date = form.taskDate.value;
-  const time = form.taskTime.value;
-  const priority = form.taskPriority.value || "low";
 
+  const name = taskNameEl.value.trim();
+  const date = taskDateEl.value;
   if (!name || !date) return alert("Task name and date are required.");
 
-  // --------------------------
-  // EDIT MODE
-  // --------------------------
+  const notes = taskNotesEl.value.trim();
+  const time = taskTimeEl.value.trim();
+  const priority = taskPriorityEl.value || appSettings.defaultPriority || Priority.low;
+
+  // ----- EDIT MODE -----
   if (editingTaskId !== null) {
     const task = taskManager.tasks.find(t => t.id === editingTaskId);
-    if (task) {
+    if (!task) return;
 
-      // >>> FIX ADDED HERE <<<
-      if (tasksByDate[task.date]) {
-        tasksByDate[task.date] = tasksByDate[task.date].filter(
-          t => !(t.title === task.name && t.time === task.time)
-        );
-      }
+    // Remove old calendar entry
+    removeTaskFromCalendar(task);
 
-      removeTaskFromCalendar(task);
+    // Update task
+    task.name = name;
+    task.notes = notes;
+    task.date = date;
+    task.time = time;
+    task.priority = priority;
 
-      task.name = name;
-      task.notes = notes;
-      task.date = date;
-      task.time = time;
-      task.priority = priority;
-      taskManager.saveTasks();
+    taskManager.saveTasks();
 
-      const oldDiv = upComing.querySelector(`div[data-id='${task.id}']`);
-      if (oldDiv) oldDiv.remove();
-      addTaskToSidebar(task);
+    // Update sidebar
+    upComing.querySelector(`[data-id="${task.id}"]`)?.remove();
+    addTaskToSidebar(task);
 
-      if (!tasksByDate[date]) tasksByDate[date] = [];
-      tasksByDate[date].push({ label: priority, title: name, time: time });
-      renderCalendarDay(date);
-    }
+    // Add to new date
+    if (!tasksByDate[date]) tasksByDate[date] = [];
+    tasksByDate[date].push({ id: task.id, label: priority, title: name, time });
+
+    renderCalendarDay(date);
 
     editingTaskId = null;
     form.reset();
@@ -282,27 +407,30 @@ form.addEventListener("submit", e => {
     return;
   }
 
-  // --------------------------
-  // ADD MODE
-  // --------------------------
+  // ----- ADD MODE -----
   const task = taskManager.addTask(name, notes, date, time, priority);
   addTaskToSidebar(task);
 
   if (!tasksByDate[date]) tasksByDate[date] = [];
-  tasksByDate[date].push({ label: priority, title: name, time: time });
-  renderCalendarDay(date);
+  tasksByDate[date].push({ id: task.id, label: task.priority, title: task.name, time: task.time });
 
+  renderCalendarDay(date);
   form.reset();
   Taskscreen.style.display = "none";
 });
 
 // --------------------------
-// Initial render
+// Initial Render
 // --------------------------
 generateCalendar();
 taskManager.tasks.forEach(task => {
   addTaskToSidebar(task);
   if (!tasksByDate[task.date]) tasksByDate[task.date] = [];
-  tasksByDate[task.date].push({ label: task.priority, title: task.name, time: task.time });
+  tasksByDate[task.date].push({
+    id: task.id,
+    label: task.priority,
+    title: task.name,
+    time: task.time,
+  });
   renderCalendarDay(task.date);
 });
